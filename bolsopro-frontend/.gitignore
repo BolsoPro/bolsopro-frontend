@@ -7,10 +7,23 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependency directories
 node_modules
+
+# Build output
 dist
 dist-ssr
+build/
+.next/
+
+# Environment files
+.env
+.env.*.local
 *.local
+
+# Cache
+.cache/
+.eslintcache
 
 # Editor directories and files
 .vscode/*
@@ -22,3 +35,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Coverage reports
+coverage/
