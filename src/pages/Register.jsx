@@ -145,30 +145,34 @@ function Register() {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsLoading(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const userData = {
-        nome: form.nome.trim(),
-        email: form.email.trim(),
-        token: 'fake-jwt-token'
-      };
+      const response = await fetch('http://localhost:8080/usuarios', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: form.nome.trim(),
+          email: form.email.trim(),
+          senha: form.senha,
+        })
+      });
 
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('token', userData.token);
+      if (!response.ok) {
+        throw new Error('Erro ao cadastrar. Verifique os dados.');
+      }
 
+      // Usuário cadastrado com sucesso
       navigate('/login');
     } catch (error) {
-      alert('Erro ao cadastrar usuário. Tente novamente.');
+      alert(error.message);
     } finally {
       setIsLoading(false);
     }
   }
+
 
   return (
     <div className="flex min-h-screen">

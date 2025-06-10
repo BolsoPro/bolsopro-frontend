@@ -4,7 +4,7 @@ import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
 import Alerts from './pages/Alerts';
-import EconomyTips from './pages/EconomyTips';
+import MetasFinanceiras from './pages/MetasFinanceiras.jsx';
 import Investments from './pages/Investments';
 import Register from './pages/Register';
 import Login from './pages/Login';
@@ -53,7 +53,7 @@ function App() {
           path="/economytips"
           element={
             <PrivateRoute>
-              <EconomyTips />
+              <MetasFinanceiras />
             </PrivateRoute>
           }
         />

@@ -108,15 +108,25 @@ function Login() {
         setError('');
 
         try {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const storedUser = localStorage.getItem('user');
-            const userData = storedUser ? JSON.parse(storedUser) : null;
+            const response = await fetch('http://localhost:8080/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: form.email.trim(),
+                    senha: form.senha
+                })
+            });
 
-            if (!userData || userData.email !== form.email.trim()) {
+            if (!response.ok) {
                 throw new Error('Email ou senha incorretos');
             }
 
-            localStorage.setItem('token', userData.token);
+            const data = await response.json();
+
+            // Armazena o token ou dados do usuário
+            localStorage.setItem('user', JSON.stringify(data));
+            localStorage.setItem('token', data.token || ''); // se retornar token
+
             navigate('/dashboard');
         } catch (error) {
             setError(error.message);
@@ -124,6 +134,7 @@ function Login() {
             setIsLoading(false);
         }
     }
+
 
     return (
         <div className="flex min-h-screen">
