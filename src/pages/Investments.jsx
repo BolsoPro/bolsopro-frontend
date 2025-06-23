@@ -1,11 +1,38 @@
 import { useEffect, useState } from 'react';
 import Header from '../components/common/Header';
-import { buscarPerfil, buscarSugestaoInvestimento } from '../services/api';
+import api from '../services/api';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeaderCell,
+    TableRoot,
+    TableRow,
+} from '../components/common/Table';
+
+const carteira = [
+    { tipo: 'Tesouro Direto', valor: 'R$ 20.000,00', rendimento: '10% a.a.', vencimento: '2026' },
+    { tipo: 'CDB', valor: 'R$ 15.000,00', rendimento: '12% a.a.', vencimento: '2025' },
+    { tipo: 'Ações', valor: 'R$ 15.000,00', rendimento: '15% a.a.', vencimento: '-' }
+];
 
 function Investments() {
     const [perfil, setPerfil] = useState('');
     const [sugestao, setSugestao] = useState(null);
     const usuarioId = 1; // depois substitua pelo ID real do usuário logado
+
+    // Função local para buscar o perfil
+    const buscarPerfil = async (id) => {
+        const response = await api.get(`/perfil/${id}`);
+        return response.data;
+    };
+
+    // Função local para buscar sugestão de investimento
+    const buscarSugestaoInvestimento = async (perfil) => {
+        const response = await api.get(`/investimentos/sugestao/${perfil}`);
+        return response.data;
+    };
 
     useEffect(() => {
         buscarPerfil(usuarioId)
@@ -46,38 +73,28 @@ function Investments() {
                 {/* Carteira */}
                 <div className="bg-white p-6 rounded-lg shadow-md mb-8">
                     <h2 className="text-xl font-semibold mb-6">Carteira de Investimentos</h2>
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                            <tr className="border-b">
-                                <th className="text-left py-3">Tipo</th>
-                                <th className="text-left py-3">Valor Investido</th>
-                                <th className="text-left py-3">Rendimento</th>
-                                <th className="text-left py-3">Vencimento</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr className="border-b">
-                                <td className="py-3">Tesouro Direto</td>
-                                <td>R$ 20.000,00</td>
-                                <td className="text-green-600">10% a.a.</td>
-                                <td>2026</td>
-                            </tr>
-                            <tr className="border-b">
-                                <td className="py-3">CDB</td>
-                                <td>R$ 15.000,00</td>
-                                <td className="text-green-600">12% a.a.</td>
-                                <td>2025</td>
-                            </tr>
-                            <tr className="border-b">
-                                <td className="py-3">Ações</td>
-                                <td>R$ 15.000,00</td>
-                                <td className="text-green-600">15% a.a.</td>
-                                <td>-</td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <TableRoot>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    <TableHeaderCell className="text-black">Tipo</TableHeaderCell>
+                                    <TableHeaderCell className="text-black">Valor Investido</TableHeaderCell>
+                                    <TableHeaderCell className="text-black">Rendimento</TableHeaderCell>
+                                    <TableHeaderCell className="text-black">Vencimento</TableHeaderCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {carteira.map((item, idx) => (
+                                    <TableRow key={idx} className={idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                                        <TableCell>{item.tipo}</TableCell>
+                                        <TableCell>{item.valor}</TableCell>
+                                        <TableCell className="text-green-600">{item.rendimento}</TableCell>
+                                        <TableCell>{item.vencimento}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableRoot>
                 </div>
 
                 {/* Sugestão Inteligente de Investimento */}

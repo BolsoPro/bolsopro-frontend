@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
 import Header from '../components/common/Header';
 import MetaForm from '../components/common/MetaForm';
+import api from '../services/api';
 
 function MetasFinanceiras() {
     const [metas, setMetas] = useState([]);
     const usuarioId = 1; // substitua com ID real do usuário
 
     const carregarMetas = () => {
-        fetch(`http://localhost:8080/metas/${usuarioId}`)
-            .then(res => res.json())
-            .then(data => setMetas(data))
+        api.get(`/metas/${usuarioId}`)
+            .then(res => setMetas(res.data))
             .catch(err => console.error('Erro ao buscar metas:', err));
     };
 
@@ -18,7 +18,7 @@ function MetasFinanceiras() {
     }, []);
 
     const excluirMeta = (id) => {
-        fetch(`http://localhost:8080/metas/${id}`, { method: 'DELETE' })
+        api.delete(`/metas/${id}`)
             .then(() => carregarMetas());
     };
 
@@ -29,16 +29,13 @@ function MetasFinanceiras() {
         if (novaDescricao && novoValor) {
             const atualizada = { ...meta, descricao: novaDescricao, valorLimite: parseFloat(novoValor) };
 
-            fetch(`http://localhost:8080/metas/${meta.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(atualizada)
-            }).then(() => carregarMetas());
+            api.put(`/metas/${meta.id}`, atualizada)
+                .then(() => carregarMetas());
         }
     };
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-gray-50">
             <Header />
             <main className="container mx-auto px-4 py-8">
                 <h1 className="text-3xl font-bold mb-6">Minhas Metas Financeiras</h1>

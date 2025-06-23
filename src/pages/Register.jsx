@@ -150,26 +150,34 @@ function Register() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8080/usuarios', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nome: form.nome.trim(),
-          email: form.email.trim(),
-          senha: form.senha,
-        })
-      });
+        // 1. Pega os usuários existentes do localStorage ou cria um array vazio
+        const existingUsers = JSON.parse(localStorage.getItem('mock_users')) || [];
 
-      if (!response.ok) {
-        throw new Error('Erro ao cadastrar. Verifique os dados.');
-      }
+        // 2. Verifica se o email já existe
+        if (existingUsers.some(user => user.email === form.email.trim())) {
+            throw new Error('Este e-mail já está cadastrado.');
+        }
 
-      // Usuário cadastrado com sucesso
-      navigate('/login');
+        // 3. Adiciona o novo usuário
+        const newUser = {
+            id: `user_${Date.now()}`,
+            nome: form.nome.trim(),
+            email: form.email.trim(),
+            senha: form.senha, // Em um app real, isso seria hasheado
+        };
+        existingUsers.push(newUser);
+
+        // 4. Salva a lista atualizada no localStorage
+        localStorage.setItem('mock_users', JSON.stringify(existingUsers));
+
+        console.log('Usuário cadastrado com sucesso (mock):', newUser);
+        navigate('/login');
+
     } catch (error) {
-      alert(error.message);
+        // Idealmente, isso seria exibido em um estado de erro no formulário
+        alert(error.message);
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
   }
 

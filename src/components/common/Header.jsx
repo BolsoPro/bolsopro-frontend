@@ -1,29 +1,32 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useContext } from 'react';
+import { AuthContext } from '../../context/AuthContext';
 
 function Header() {
     const location = useLocation();
-    const isAuthenticated = localStorage.getItem('token') !== null;
+    const navigate = useNavigate();
+    const { user, logout } = useContext(AuthContext);
 
     const isActive = (path) => {
         return location.pathname === path;
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
+        logout();
+        navigate('/'); // Redireciona para a home page após o logout
     };
 
     return (
-        <header className="bg-white shadow-sm">
+        <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md shadow-sm">
             <div className="container mx-auto px-4">
-                <div className="flex justify-between items-center h-16">
+                <div className="flex justify-between items-center h-20">
                     <Link to="/" className="flex items-center">
-                        <img src="/src/assets/logo.svg" alt="BolsoPro" className="h-8" />
-                        <span className="ml-2 text-xl font-bold text-gray-900">BolsoPro</span>
+                        <img src="/src/assets/bolsopro.svg" alt="BolsoPro" className="h-16" />
+                        <span className="ml-2 text-xl font-bold text-gray-900">BolsoPro AI</span>
                     </Link>
 
-                    <nav className="hidden md:flex space-x-8">
-                        {isAuthenticated ? (
+                    <nav className="hidden md:flex items-center space-x-8">
+                        {user ? (
                             <>
                                 <Link
                                     to="/dashboard"
@@ -80,13 +83,13 @@ function Header() {
                             <>
                                 <Link
                                     to="/login"
-                                    className="text-sm font-medium text-gray-500 hover:text-gray-900"
+                                    className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
                                 >
                                     Login
                                 </Link>
                                 <Link
                                     to="/register"
-                                    className="text-sm font-medium text-gray-500 hover:text-gray-900"
+                                    className="text-sm font-medium text-white bg-gray-900 px-4 py-2 rounded-md hover:bg-gray-700 transition-colors"
                                 >
                                     Cadastro
                                 </Link>
@@ -94,7 +97,7 @@ function Header() {
                         )}
                     </nav>
 
-                    {isAuthenticated && (
+                    {user && (
                         <div className="flex items-center">
                             <Link
                                 to="/perfil"
@@ -108,7 +111,7 @@ function Header() {
                             </Link>
                             <button
                                 onClick={handleLogout}
-                                className="text-sm font-medium text-gray-500 hover:text-gray-900"
+                                className="text-sm font-medium text-white bg-gray-900 px-4 py-2 rounded-md hover:bg-gray-700 transition-colors"
                             >
                                 Sair
                             </button>

@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import Header from '../components/common/Header';
+import TipCard from '../components/EconomyTips/TipCard';
+import TipList from '../components/EconomyTips/TipList';
+import { useNavigate } from 'react-router-dom';
 
 function Alerts() {
     const [notificacoes, setNotificacoes] = useState([
@@ -8,16 +11,37 @@ function Alerts() {
             tipo: "Alerta",
             mensagem: "Despesa excedeu a meta de economia",
             data: "2024-06-07T14:00:00",
+            dica: {
+                title: "Reduza gastos supérfluos",
+                description: "Revise seus gastos mensais e corte despesas não essenciais para equilibrar seu orçamento."
+            }
         },
         {
             id: 2,
             tipo: "Aviso",
             mensagem: "Meta de economia atingida!",
             data: "2024-06-01T09:00:00",
+            dica: {
+                title: "Invista seu excedente",
+                description: "Considere investir o valor economizado para potencializar seus rendimentos."
+            }
         },
     ]);
 
+    // Dicas gerais para exibir no final da página
+    const dicasGerais = [
+        {
+            title: "Planeje suas compras",
+            description: "Faça uma lista antes de ir ao mercado e evite compras por impulso."
+        },
+        {
+            title: "Negocie dívidas",
+            description: "Procure condições melhores para quitar dívidas e evitar juros altos."
+        }
+    ];
+
     const usuarioId = localStorage.getItem("usuarioId"); // ou outra forma de autenticação
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetch(`http://localhost:8080/notificacoes/${usuarioId}`)
@@ -42,14 +66,25 @@ function Alerts() {
                         <p className="text-gray-600">Nenhum alerta encontrado.</p>
                     ) : (
                         notificacoes.map((noti) => (
-                            <div key={noti.id} className="bg-white p-6 rounded-lg shadow-md">
+                            <div key={noti.id} className="bg-white p-6 rounded-lg shadow-md mb-4">
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <h2 className="text-xl font-semibold mb-2">{noti.tipo}</h2>
                                         <p className="text-gray-600 mb-2">{noti.mensagem}</p>
-                                        <p className="text-sm text-gray-500">
+                                        <p className="text-sm text-gray-500 mb-2">
                                             Criado em: {new Date(noti.data).toLocaleDateString()}
                                         </p>
+                                        {/* 1. Sugestão de dica ao receber um alerta */}
+                                        {noti.dica && (
+                                            <TipCard title={noti.dica.title} description={noti.dica.description} />
+                                        )}
+                                        {/* 2. Botão para ver dicas */}
+                                        <button
+                                            onClick={() => navigate('/dicas')}
+                                            className="mt-2 text-blue-600 underline text-sm"
+                                        >
+                                            Ver Dicas de Economia
+                                        </button>
                                     </div>
                                     <label className="relative inline-flex items-center cursor-pointer">
                                         <input type="checkbox" className="sr-only peer" checked readOnly />
@@ -59,6 +94,12 @@ function Alerts() {
                             </div>
                         ))
                     )}
+                </div>
+
+                {/* 3. Exibir dicas direto na página de alertas */}
+                <div className="mt-8">
+                    <h2 className="text-lg font-semibold mb-4">Dicas de Economia</h2>
+                    <TipList tips={dicasGerais} />
                 </div>
             </main>
         </div>

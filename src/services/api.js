@@ -1,6 +1,9 @@
-// services/api.js
-export const buscarPerfil = (id) =>
-    fetch(`http://localhost:8080/perfil/${id}`).then(res => res.json());
+import axios from 'axios';
 
-export const buscarSugestaoInvestimento = (perfil) =>
-    fetch(`http://localhost:8080/investimentos/sugestao/${perfil}`).then(res => res.json());
+const api = axios.create({
+  baseURL: 'http://localhost:8080/api',
+});
+
+export default api;
+
+

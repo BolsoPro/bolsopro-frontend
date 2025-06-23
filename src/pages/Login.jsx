@@ -1,8 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useContext } from 'react';
 import { NeatGradient } from "@firecms/neat";
 import * as THREE from 'three';
-import LogoOficial from '../assets/LogoOficial.svg';
+import LogoBP from '../assets/LogoBP.svg';
+import { AuthContext } from '../context/AuthContext';
 
 function Login() {
     const gradientRef = useRef(null);
@@ -12,6 +13,7 @@ function Login() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    const { login } = useContext(AuthContext);
 
     useEffect(() => {
         const initGradient = async () => {
@@ -108,28 +110,26 @@ function Login() {
         setError('');
 
         try {
-            const response = await fetch('http://localhost:8080/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: form.email.trim(),
-                    senha: form.senha
-                })
-            });
+            // 1. Pega os usuários cadastrados do localStorage
+            const registeredUsers = JSON.parse(localStorage.getItem('mock_users')) || [];
 
-            if (!response.ok) {
-                throw new Error('Email ou senha incorretos');
+            // 2. Procura por um usuário com o email e senha correspondentes
+            const foundUser = registeredUsers.find(
+                user => user.email === form.email.trim() && user.senha === form.senha
+            );
+
+            if (!foundUser) {
+                throw new Error('E-mail ou senha inválidos.');
             }
 
-            const data = await response.json();
-
-            // Armazena o token ou dados do usuário
-            localStorage.setItem('user', JSON.stringify(data));
-            localStorage.setItem('token', data.token || ''); // se retornar token
-
+            // 3. Remove a senha antes de salvar no contexto e redireciona
+            const { senha, ...userToLogin } = foundUser;
+            
+            login(userToLogin);
             navigate('/dashboard');
+
         } catch (error) {
-            setError(error.message);
+            setError(error.message || 'Erro ao fazer login');
         } finally {
             setIsLoading(false);
         }
@@ -141,7 +141,7 @@ function Login() {
             {/* Left pane */}
             <div className="w-[480px] bg-white p-12">
                 <div className="mb-8">
-                    <img src={LogoOficial} alt="Logo" className="w-12 h-12" />
+                    <img src={LogoBP} alt="Logo" className="w-40 h-40" />
                 </div>
 
                 <div className="mb-8">
@@ -156,69 +156,87 @@ function Login() {
                     </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="space-y-6">
-                        <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-900 mb-2">
-                                E-mail
-                            </label>
-                            <input
-                                id="email"
-                                name="email"
-                                type="email"
-                                required
-                                className="block w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#004E64]"
-                                value={form.email}
-                                onChange={handleChange}
-                            />
+                <div className="relative">
+                    {isLoading && (
+                        <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-10 rounded-md">
+                            <svg className="animate-spin h-8 w-8 text-[#004E64]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                    )}
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="space-y-6">
+                            <div>
+                                <label htmlFor="email" className="block text-sm font-medium text-gray-900 mb-2">
+                                    E-mail
+                                </label>
+                                <input
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    required
+                                    className="block w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#004E64]"
+                                    value={form.email}
+                                    onChange={handleChange}
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="password" className="block text-sm font-medium text-gray-900 mb-2">
+                                    Senha
+                                </label>
+                                <input
+                                    id="password"
+                                    name="senha"
+                                    type="password"
+                                    required
+                                    className="block w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#004E64]"
+                                    value={form.senha}
+                                    onChange={handleChange}
+                                />
+                            </div>
                         </div>
 
-                        <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-900 mb-2">
-                                Senha
-                            </label>
-                            <input
-                                id="password"
-                                name="senha"
-                                type="password"
-                                required
-                                className="block w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#004E64]"
-                                value={form.senha}
-                                onChange={handleChange}
-                            />
-                        </div>
-                    </div>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                                <input
+                                    id="remember-me"
+                                    name="remember-me"
+                                    type="checkbox"
+                                    className="h-4 w-4 text-[#004E64] focus:ring-[#004E64] border-gray-300 rounded"
+                                />
+                                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                                    Lembrar-me
+                                </label>
+                            </div>
 
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                            <input
-                                id="remember-me"
-                                name="remember-me"
-                                type="checkbox"
-                                className="h-4 w-4 text-[#004E64] focus:ring-[#004E64] border-gray-300 rounded"
-                            />
-                            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                                Lembrar-me
-                            </label>
+                            <div className="text-sm">
+                                <a href="#" className="text-[#004E64] hover:text-[#003D4F]">
+                                    Esqueceu sua senha?
+                                </a>
+                            </div>
                         </div>
 
-                        <div className="text-sm">
-                            <a href="#" className="text-[#004E64] hover:text-[#003D4F]">
-                                Esqueceu sua senha?
-                            </a>
-                        </div>
-                    </div>
+                        {error && <div className="text-red-500 text-sm text-center">{error}</div>}
 
-                    {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+                        <button
+                            type="submit"
+                            className={`w-full py-2 px-4 bg-[#004E64] text-white rounded-md hover:bg-[#003D4F] transition-colors duration-200 ${isLoading ? 'opacity-75 cursor-not-allowed' : ''}`}
+                            disabled={isLoading}
+                        >
+                            Continuar
+                        </button>
+                    </form>
+                </div>
 
-                    <button
-                        type="submit"
-                        className={`w-full py-2 px-4 bg-[#004E64] text-white rounded-md hover:bg-[#003D4F] transition-colors duration-200 ${isLoading ? 'opacity-75 cursor-not-allowed' : ''}`}
-                        disabled={isLoading}
-                    >
-                        {isLoading ? 'Entrando...' : 'Continuar'}
-                    </button>
-                </form>
+                <div className="text-center mt-6">
+                    <Link to="/" className="inline-block p-2 rounded-full text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-7 4h6" />
+                        </svg>
+                    </Link>
+                </div>
             </div>
 
             {/* Right pane */}

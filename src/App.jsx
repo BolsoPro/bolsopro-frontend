@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { TransactionsProvider } from './context/TransactionsContext';
 
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
@@ -26,7 +27,9 @@ function App() {
           path="/dashboard"
           element={
             <PrivateRoute>
-              <Dashboard />
+              <TransactionsProvider>
+                <Dashboard />
+              </TransactionsProvider>
             </PrivateRoute>
           }
         />
@@ -35,7 +38,9 @@ function App() {
           path="/transactions"
           element={
             <PrivateRoute>
-              <Transactions />
+              <TransactionsProvider>
+                <Transactions />
+              </TransactionsProvider>
             </PrivateRoute>
           }
         />

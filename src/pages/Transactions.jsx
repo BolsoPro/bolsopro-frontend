@@ -1,77 +1,75 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Header from '../components/common/Header';
 import NovaTransacaoModal from '../components/Transactions/NovaTransacaoModal';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeaderCell,
+    TableRoot,
+    TableRow,
+} from '../components/common/Table';
+import { TrashIcon, PencilIcon } from "lucide-react";
+import Button from "../components/common/Button";
+import { useTransactions } from '../context/TransactionsContext';
 
 function Transactions() {
-    const [transacoes, setTransacoes] = useState([]);
+    const { transacoes, adicionarTransacao, removerTransacao } = useTransactions();
     const [filtro, setFiltro] = useState('');
+    const [termoBusca, setTermoBusca] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [totalReceitas, setTotalReceitas] = useState(0);
     const [totalDespesas, setTotalDespesas] = useState(0);
     const [saldo, setSaldo] = useState(0);
-    const usuarioId = 1; // Trocar com ID real
+    // const usuarioId = 1; // Trocar com ID real
 
-    useEffect(() => {
-        fetch(`http://localhost:8080/transacoes/${usuarioId}`)
-            .then(res => res.json())
-            .then(data => {
-                setTransacoes(data);
-                calcularResumo(data);
-            })
-            .catch(err => console.error('Erro ao buscar transações:', err));
-    }, [usuarioId]);
+    // useEffect(() => {
+    //     const fetchTransacoes = async () => {
+    //         try {
+    //             const response = await fetch(`http://localhost:8080/transacoes/${usuarioId}`);
+    //             if (!response.ok) throw new Error('Falha ao buscar dados');
+    //             const data = await response.json();
+    //             setTransacoes(data);
+    //             calcularResumo(data);
+    //         } catch (err) {
+    //             console.error('Erro ao buscar transações:', err);
+    //         }
+    //     };
+    //     fetchTransacoes();
+    // }, [usuarioId]);
 
     const calcularResumo = (lista) => {
         const receitas = lista.filter(t => t.tipo === 'Receita');
         const despesas = lista.filter(t => t.tipo === 'Despesa');
-
         const totalR = receitas.reduce((soma, r) => soma + r.valor, 0);
         const totalD = despesas.reduce((soma, d) => soma + d.valor, 0);
-
         setTotalReceitas(totalR);
         setTotalDespesas(totalD);
         setSaldo(totalR - totalD);
     };
 
-    const salvarNovaTransacao = (transacao) => {
-        const url = transacao.tipo === 'Receita'
-            ? 'http://localhost:8080/receitas'
-            : 'http://localhost:8080/despesas';
+    // Atualiza o resumo ao iniciar
+    useState(() => { calcularResumo(transacoes); }, [transacoes]);
 
-        fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(transacao)
-        })
-            .then(res => res.json())
-            .then(() => {
-                fetch(`http://localhost:8080/transacoes/${usuarioId}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        setTransacoes(data);
-                        calcularResumo(data);
-                    });
-            });
+    const salvarNovaTransacao = (transacao) => {
+        adicionarTransacao(transacao);
+        calcularResumo([...transacoes, transacao]);
+        setShowModal(false);
     };
 
     const excluirTransacao = (transacao) => {
-        const endpoint = transacao.tipo === 'Receita'
-            ? `http://localhost:8080/receitas/${transacao.id}`
-            : `http://localhost:8080/despesas/${transacao.id}`;
-
         if (window.confirm('Deseja realmente excluir esta transação?')) {
-            fetch(endpoint, { method: 'DELETE' })
-                .then(() => {
-                    const novaLista = transacoes.filter(t => t.id !== transacao.id);
-                    setTransacoes(novaLista);
-                    calcularResumo(novaLista);
-                });
+            removerTransacao(transacao.id);
+            calcularResumo(transacoes.filter(t => t.id !== transacao.id));
         }
     };
 
-    const transacoesFiltradas = transacoes.filter(t =>
-        filtro === '' ? true : t.tipo.toLowerCase() === filtro
-    );
+    const transacoesFiltradas = transacoes.filter(t => {
+        const correspondeBusca = t.descricao.toLowerCase().includes(termoBusca.toLowerCase());
+        const correspondeFiltro = filtro === '' ? true : t.tipo.toLowerCase() === filtro;
+        return correspondeBusca && correspondeFiltro;
+    });
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -99,62 +97,69 @@ function Transactions() {
                                 type="text"
                                 placeholder="Pesquisar transações..."
                                 className="flex-1 p-2 border rounded-lg"
-                                disabled
+                                value={termoBusca}
+                                onChange={(e) => setTermoBusca(e.target.value)}
                             />
                             <select
                                 className="p-2 border rounded-lg"
                                 value={filtro}
                                 onChange={(e) => setFiltro(e.target.value)}
                             >
-                                <option value="">Todas as Categorias</option>
+                                <option value="">Todos os Tipos</option>
                                 <option value="receita">Receitas</option>
                                 <option value="despesa">Despesas</option>
                             </select>
                         </div>
 
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                <tr className="border-b">
-                                    <th className="text-left py-3">Data</th>
-                                    <th className="text-left py-3">Descrição</th>
-                                    <th className="text-left py-3">Categoria</th>
-                                    <th className="text-left py-3">Valor</th>
-                                    <th className="text-left py-3">Tipo</th>
-                                    <th className="text-left py-3">Ações</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {transacoesFiltradas.map((t, index) => (
-                                    <tr key={index} className="border-b">
-                                        <td className="py-3">{new Date(t.data).toLocaleDateString()}</td>
-                                        <td>{t.descricao}</td>
-                                        <td>{t.categoria || '-'}</td>
-                                        <td className={t.tipo === 'Receita' ? 'text-green-600' : 'text-red-600'}>
-                                            R$ {t.valor.toFixed(2)}
-                                        </td>
-                                        <td>{t.tipo}</td>
-                                        <td>
-                                            <button className="text-blue-600 hover:text-blue-800 mr-2">Editar</button>
-                                            <button
-                                                onClick={() => excluirTransacao(t)}
-                                                className="text-red-600 hover:text-red-800"
-                                            >
-                                                Excluir
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {transacoesFiltradas.length === 0 && (
-                                    <tr>
-                                        <td colSpan="6" className="text-center py-4 text-gray-500">
-                                            Nenhuma transação encontrada.
-                                        </td>
-                                    </tr>
-                                )}
-                                </tbody>
-                            </table>
-                        </div>
+                        <TableRoot>
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableHeaderCell className="text-black">Data</TableHeaderCell>
+                                        <TableHeaderCell className="text-black">Descrição</TableHeaderCell>
+                                        <TableHeaderCell className="text-black">Categoria</TableHeaderCell>
+                                        <TableHeaderCell className="text-black">Valor</TableHeaderCell>
+                                        <TableHeaderCell className="text-black">Tipo</TableHeaderCell>
+                                        <TableHeaderCell className="text-black">Ações</TableHeaderCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {transacoesFiltradas.map((t, index) => (
+                                        <TableRow key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                                            <TableCell>{new Date(t.data).toLocaleDateString()}</TableCell>
+                                            <TableCell>{t.descricao}</TableCell>
+                                            <TableCell>{t.categoria || '-'}</TableCell>
+                                            <TableCell>R$ {t.valor.toFixed(2)}</TableCell>
+                                            <TableCell>{t.tipo}</TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-row items-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        className="inline-flex items-center justify-center p-2 rounded bg-black ml-0 focus:outline focus:outline-2 focus:outline-gray-200 ring-0 focus:ring-0"
+                                                        title="Editar"
+                                                    >
+                                                        <PencilIcon className="text-white" size={18} aria-hidden="true" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => excluirTransacao(t)}
+                                                        type="button"
+                                                        className="inline-flex items-center justify-center p-2 rounded bg-red-600 ml-0 focus:outline-none focus:ring-0"
+                                                        title="Excluir"
+                                                    >
+                                                        <TrashIcon className="text-white" size={18} aria-hidden="true" />
+                                                    </button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                    {transacoesFiltradas.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="text-center">Nenhuma transação encontrada.</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </TableRoot>
                     </div>
                 </div>
             </main>

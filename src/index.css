@@ -51,7 +51,6 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
 }
@@ -60,7 +59,8 @@ button:hover {
 }
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: 2px solid #e5e7eb !important; /* Tailwind gray-200 */
+  box-shadow: none !important;
 }
 
 @media (prefers-color-scheme: light) {
@@ -74,4 +74,9 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+/* Força a cor dos rótulos do eixo do gráfico Tremor para branco */
+.tremor-chart .tremor-axis-label {
+    fill: #fff !important;
 }
