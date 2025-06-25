@@ -19,6 +19,9 @@ function Transactions() {
     const { user } = useContext(AuthContext);
     const usuarioId = user?.id;
 
+    console.log('user do contexto:', user);
+    console.log('usuarioId:', usuarioId);
+
     const [transacoes, setTransacoes] = useState([]);
     const [filtro, setFiltro] = useState('');
     const [termoBusca, setTermoBusca] = useState('');
@@ -30,14 +33,21 @@ function Transactions() {
     const carregarTransacoes = async () => {
         if (!usuarioId) return;
 
+        console.log('usuarioId usado na busca:', usuarioId);
         try {
             const [resReceitas, resDespesas] = await Promise.all([
-                axios.get(`/api/receitas?usuarioId=${usuarioId}`),
-                axios.get(`/api/despesas?usuarioId=${usuarioId}`)
+                axios.get(`/usuarios/${usuarioId}/receitas`),
+                axios.get(`/despesas`)
             ]);
 
+            console.log('Receitas retornadas:', resReceitas.data);
+            console.log('Despesas retornadas:', resDespesas.data);
+
             const receitas = resReceitas.data.map(r => ({ ...r, tipo: 'Receita' }));
-            const despesas = resDespesas.data.map(d => ({ ...d, tipo: 'Despesa' }));
+            // Filtra despesas do usuário
+            const despesas = resDespesas.data
+                .filter(d => d.usuario && d.usuario.id === usuarioId)
+                .map(d => ({ ...d, tipo: 'Despesa' }));
 
             const todas = [...receitas, ...despesas];
             setTransacoes(todas);
@@ -62,12 +72,24 @@ function Transactions() {
     };
 
     const salvarNovaTransacao = async (transacao) => {
+        if (!usuarioId) {
+            alert('Usuário não identificado. Faça login novamente.');
+            return;
+        }
         try {
-            const endpoint = transacao.tipo === 'Receita' ? '/api/receitas' : '/api/despesas';
-            const payload = { ...transacao, usuarioId };
+            let endpoint;
+            let payload = { ...transacao };
+            if (transacao.tipo === 'Receita') {
+                endpoint = `/usuarios/${usuarioId}/receitas`;
+            } else {
+                endpoint = '/despesas';
+                payload = { ...payload, usuario: { id: usuarioId } };
+            }
 
-            await axios.post(endpoint, payload);
-            carregarTransacoes();
+            console.log('Payload enviado no POST:', payload);
+            const response = await axios.post(endpoint, payload);
+            console.log('Response do POST:', response.data);
+            await carregarTransacoes(); // Aguarda atualização
             setShowModal(false);
         } catch (error) {
             console.error('Erro ao salvar transação:', error);
@@ -79,8 +101,8 @@ function Transactions() {
 
         try {
             const endpoint = transacao.tipo === 'Receita'
-                ? `/api/receitas/${transacao.id}`
-                : `/api/despesas/${transacao.id}`;
+                ? `/receitas/${transacao.id}`
+                : `/despesas/${transacao.id}`;
 
             await axios.delete(endpoint);
             carregarTransacoes();
@@ -101,8 +123,18 @@ function Transactions() {
             <main className="container mx-auto px-4 py-8">
                 <div className="flex justify-between items-center mb-8">
                     <h1 className="text-3xl font-bold">Transações</h1>
-                    <button onClick={() => setShowModal(true)}
-                            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    <button
+                        onClick={() => {
+                            if (!usuarioId) {
+                                alert('Você precisa estar logado para cadastrar uma transação.');
+                                return;
+                            }
+                            setShowModal(true);
+                        }}
+                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                        disabled={!usuarioId}
+                        style={!usuarioId ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                    >
                         Nova Transação
                     </button>
                 </div>

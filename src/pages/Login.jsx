@@ -117,8 +117,10 @@ function Login() {
             });
     
             const usuario = response.data;
-            login(usuario); 
-            localStorage.setItem('user', JSON.stringify(usuario)); 
+            // Garante que o id seja apenas o número
+            const usuarioCorrigido = { ...usuario, id: Number(usuario.id) };
+            login(usuarioCorrigido); 
+            localStorage.setItem('user', JSON.stringify(usuarioCorrigido)); 
             navigate('/dashboard'); 
     
         } catch (error) {

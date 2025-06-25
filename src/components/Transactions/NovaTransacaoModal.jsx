@@ -37,11 +37,16 @@ function NovaTransacaoModal({ onClose, onSalvar }) {
             valor: parseFloat(valor),
             data,
             tipo,
-            categoria,
-            usuarioId: 1 // trocar pelo valor real do usuário logado
+            categoria
         };
 
         onSalvar(novaTransacao);
+        // Limpa os campos após salvar
+        setDescricao('');
+        setValor('');
+        setData('');
+        setCategoria('');
+        setTipo('Receita');
     };
 
     const handleTipoChange = (item) => {
