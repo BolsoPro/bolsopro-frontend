@@ -9,7 +9,7 @@ import {
     TableRoot,
     TableRow,
 } from '../components/common/Table';
-import { useTransactions } from '../context/TransactionsContext';
+import { useTransactions } from '../context/TransactionsContext.jsx';
 
 const valueFormatter = (number) => `R$ ${new Intl.NumberFormat('pt-BR').format(number).toString()}`;
 

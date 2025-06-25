@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import Header from '../components/common/Header';
 import NovaTransacaoModal from '../components/Transactions/NovaTransacaoModal';
 import {
@@ -12,32 +12,44 @@ import {
 } from '../components/common/Table';
 import { TrashIcon, PencilIcon } from "lucide-react";
 import Button from "../components/common/Button";
-import { useTransactions } from '../context/TransactionsContext';
+import axios from '../services/api';
+import { AuthContext } from '../context/AuthContext';
 
 function Transactions() {
-    const { transacoes, adicionarTransacao, removerTransacao } = useTransactions();
+    const { user } = useContext(AuthContext);
+    const usuarioId = user?.id;
+
+    const [transacoes, setTransacoes] = useState([]);
     const [filtro, setFiltro] = useState('');
     const [termoBusca, setTermoBusca] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [totalReceitas, setTotalReceitas] = useState(0);
     const [totalDespesas, setTotalDespesas] = useState(0);
     const [saldo, setSaldo] = useState(0);
-    // const usuarioId = 1; // Trocar com ID real
 
-    // useEffect(() => {
-    //     const fetchTransacoes = async () => {
-    //         try {
-    //             const response = await fetch(`http://localhost:8080/transacoes/${usuarioId}`);
-    //             if (!response.ok) throw new Error('Falha ao buscar dados');
-    //             const data = await response.json();
-    //             setTransacoes(data);
-    //             calcularResumo(data);
-    //         } catch (err) {
-    //             console.error('Erro ao buscar transações:', err);
-    //         }
-    //     };
-    //     fetchTransacoes();
-    // }, [usuarioId]);
+    const carregarTransacoes = async () => {
+        if (!usuarioId) return;
+
+        try {
+            const [resReceitas, resDespesas] = await Promise.all([
+                axios.get(`/api/receitas?usuarioId=${usuarioId}`),
+                axios.get(`/api/despesas?usuarioId=${usuarioId}`)
+            ]);
+
+            const receitas = resReceitas.data.map(r => ({ ...r, tipo: 'Receita' }));
+            const despesas = resDespesas.data.map(d => ({ ...d, tipo: 'Despesa' }));
+
+            const todas = [...receitas, ...despesas];
+            setTransacoes(todas);
+            calcularResumo(todas);
+        } catch (error) {
+            console.error('Erro ao carregar transações:', error);
+        }
+    };
+
+    useEffect(() => {
+        carregarTransacoes();
+    }, [usuarioId]);
 
     const calcularResumo = (lista) => {
         const receitas = lista.filter(t => t.tipo === 'Receita');
@@ -49,19 +61,31 @@ function Transactions() {
         setSaldo(totalR - totalD);
     };
 
-    // Atualiza o resumo ao iniciar
-    useState(() => { calcularResumo(transacoes); }, [transacoes]);
+    const salvarNovaTransacao = async (transacao) => {
+        try {
+            const endpoint = transacao.tipo === 'Receita' ? '/api/receitas' : '/api/despesas';
+            const payload = { ...transacao, usuarioId };
 
-    const salvarNovaTransacao = (transacao) => {
-        adicionarTransacao(transacao);
-        calcularResumo([...transacoes, transacao]);
-        setShowModal(false);
+            await axios.post(endpoint, payload);
+            carregarTransacoes();
+            setShowModal(false);
+        } catch (error) {
+            console.error('Erro ao salvar transação:', error);
+        }
     };
 
-    const excluirTransacao = (transacao) => {
-        if (window.confirm('Deseja realmente excluir esta transação?')) {
-            removerTransacao(transacao.id);
-            calcularResumo(transacoes.filter(t => t.id !== transacao.id));
+    const excluirTransacao = async (transacao) => {
+        if (!window.confirm('Deseja realmente excluir esta transação?')) return;
+
+        try {
+            const endpoint = transacao.tipo === 'Receita'
+                ? `/api/receitas/${transacao.id}`
+                : `/api/despesas/${transacao.id}`;
+
+            await axios.delete(endpoint);
+            carregarTransacoes();
+        } catch (error) {
+            console.error('Erro ao excluir transação:', error);
         }
     };
 
@@ -83,7 +107,6 @@ function Transactions() {
                     </button>
                 </div>
 
-                {/* Cards com valores automáticos */}
                 <div className="grid md:grid-cols-3 gap-6 mb-8">
                     <ResumoCard titulo="Receitas do Mês" valor={totalReceitas} cor="text-green-600" />
                     <ResumoCard titulo="Despesas do Mês" valor={totalDespesas} cor="text-red-600" />
@@ -133,20 +156,13 @@ function Transactions() {
                                             <TableCell>{t.tipo}</TableCell>
                                             <TableCell>
                                                 <div className="flex flex-row items-center gap-2">
-                                                    <button
-                                                        type="button"
-                                                        className="inline-flex items-center justify-center p-2 rounded bg-black ml-0 focus:outline focus:outline-2 focus:outline-gray-200 ring-0 focus:ring-0"
-                                                        title="Editar"
-                                                    >
-                                                        <PencilIcon className="text-white" size={18} aria-hidden="true" />
+                                                    <button className="inline-flex items-center justify-center p-2 rounded bg-black">
+                                                        <PencilIcon className="text-white" size={18} />
                                                     </button>
                                                     <button
                                                         onClick={() => excluirTransacao(t)}
-                                                        type="button"
-                                                        className="inline-flex items-center justify-center p-2 rounded bg-red-600 ml-0 focus:outline-none focus:ring-0"
-                                                        title="Excluir"
-                                                    >
-                                                        <TrashIcon className="text-white" size={18} aria-hidden="true" />
+                                                        className="inline-flex items-center justify-center p-2 rounded bg-red-600">
+                                                        <TrashIcon className="text-white" size={18} />
                                                     </button>
                                                 </div>
                                             </TableCell>
@@ -164,7 +180,6 @@ function Transactions() {
                 </div>
             </main>
 
-            {/* Modal */}
             {showModal && (
                 <NovaTransacaoModal
                     onClose={() => setShowModal(false)}

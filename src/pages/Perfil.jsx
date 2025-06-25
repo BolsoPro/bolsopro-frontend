@@ -2,6 +2,8 @@ import { useEffect, useState, useContext } from 'react';
 import Header from '../components/common/Header';
 import PerfilUsuario from '../components/common/PerfilUsuario';
 import { AuthContext } from '../context/AuthContext';
+import api from '../services/api';
+
 
 function Perfil() {
     const { user } = useContext(AuthContext);

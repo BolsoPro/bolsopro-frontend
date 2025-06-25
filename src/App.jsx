@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { TransactionsProvider } from './context/TransactionsContext';
+import { TransactionsProvider } from './context/TransactionsContext.jsx';
 
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';

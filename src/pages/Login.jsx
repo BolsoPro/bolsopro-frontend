@@ -4,6 +4,7 @@ import { NeatGradient } from "@firecms/neat";
 import * as THREE from 'three';
 import LogoBP from '../assets/LogoBP.svg';
 import { AuthContext } from '../context/AuthContext';
+import api from '../services/api';
 
 function Login() {
     const gradientRef = useRef(null);
@@ -108,28 +109,21 @@ function Login() {
         e.preventDefault();
         setIsLoading(true);
         setError('');
-
+    
         try {
-            // 1. Pega os usuários cadastrados do localStorage
-            const registeredUsers = JSON.parse(localStorage.getItem('mock_users')) || [];
-
-            // 2. Procura por um usuário com o email e senha correspondentes
-            const foundUser = registeredUsers.find(
-                user => user.email === form.email.trim() && user.senha === form.senha
-            );
-
-            if (!foundUser) {
-                throw new Error('E-mail ou senha inválidos.');
-            }
-
-            // 3. Remove a senha antes de salvar no contexto e redireciona
-            const { senha, ...userToLogin } = foundUser;
-            
-            login(userToLogin);
-            navigate('/dashboard');
-
+            const response = await api.post('/usuarios/login', {
+                email: form.email,
+                senha: form.senha
+            });
+    
+            const usuario = response.data;
+            login(usuario); 
+            localStorage.setItem('user', JSON.stringify(usuario)); 
+            navigate('/dashboard'); 
+    
         } catch (error) {
-            setError(error.message || 'Erro ao fazer login');
+            console.error(error);
+            setError(error.response?.data || 'E-mail ou senha inválidos');
         } finally {
             setIsLoading(false);
         }
