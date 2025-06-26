@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext } from 'react';
+import { useContext, useState } from 'react';
 import Header from '../components/common/Header';
 import NovaTransacaoModal from '../components/Transactions/NovaTransacaoModal';
 import {
@@ -11,111 +11,55 @@ import {
     TableRow,
 } from '../components/common/Table';
 import { TrashIcon, PencilIcon } from "lucide-react";
-import Button from "../components/common/Button";
-import axios from '../services/api';
 import { AuthContext } from '../context/AuthContext';
+import { useTransactions } from '../context/TransactionsContext';
 
 function Transactions() {
     const { user } = useContext(AuthContext);
     const usuarioId = user?.id;
+    const { transacoes, adicionarTransacao, removerTransacao } = useTransactions();
 
-    console.log('user do contexto:', user);
-    console.log('usuarioId:', usuarioId);
-
-    const [transacoes, setTransacoes] = useState([]);
     const [filtro, setFiltro] = useState('');
     const [termoBusca, setTermoBusca] = useState('');
     const [showModal, setShowModal] = useState(false);
-    const [totalReceitas, setTotalReceitas] = useState(0);
-    const [totalDespesas, setTotalDespesas] = useState(0);
-    const [saldo, setSaldo] = useState(0);
 
-    const carregarTransacoes = async () => {
-        if (!usuarioId) return;
+    // Resumo
+    const receitas = transacoes.filter(t => t.tipo === 'Receita');
+    const despesas = transacoes.filter(t => t.tipo === 'Despesa');
+    const totalReceitas = receitas.reduce((soma, r) => soma + r.valor, 0);
+    const totalDespesas = despesas.reduce((soma, d) => soma + d.valor, 0);
+    const saldo = totalReceitas - totalDespesas;
 
-        console.log('usuarioId usado na busca:', usuarioId);
-        try {
-            const [resReceitas, resDespesas] = await Promise.all([
-                axios.get(`/usuarios/${usuarioId}/receitas`),
-                axios.get(`/despesas`)
-            ]);
+    // Filtro e busca
+    const transacoesFiltradas = transacoes.filter(t => {
+        const correspondeBusca = t.descricao.toLowerCase().includes(termoBusca.toLowerCase());
+        const correspondeFiltro = filtro === '' ? true : t.tipo.toLowerCase() === filtro;
+        return correspondeBusca && correspondeFiltro;
+    });
 
-            console.log('Receitas retornadas:', resReceitas.data);
-            console.log('Despesas retornadas:', resDespesas.data);
-
-            const receitas = resReceitas.data.map(r => ({ ...r, tipo: 'Receita' }));
-            // Filtra despesas do usuário
-            const despesas = resDespesas.data
-                .filter(d => d.usuario && d.usuario.id === usuarioId)
-                .map(d => ({ ...d, tipo: 'Despesa' }));
-
-            const todas = [...receitas, ...despesas];
-            setTransacoes(todas);
-            calcularResumo(todas);
-        } catch (error) {
-            console.error('Erro ao carregar transações:', error);
-        }
-    };
-
-    useEffect(() => {
-        carregarTransacoes();
-    }, [usuarioId]);
-
-    const calcularResumo = (lista) => {
-        const receitas = lista.filter(t => t.tipo === 'Receita');
-        const despesas = lista.filter(t => t.tipo === 'Despesa');
-        const totalR = receitas.reduce((soma, r) => soma + r.valor, 0);
-        const totalD = despesas.reduce((soma, d) => soma + d.valor, 0);
-        setTotalReceitas(totalR);
-        setTotalDespesas(totalD);
-        setSaldo(totalR - totalD);
-    };
-
+    // Salvar nova transação
     const salvarNovaTransacao = async (transacao) => {
         if (!usuarioId) {
             alert('Usuário não identificado. Faça login novamente.');
             return;
         }
         try {
-            let endpoint;
-            let payload = { ...transacao };
-            if (transacao.tipo === 'Receita') {
-                endpoint = `/usuarios/${usuarioId}/receitas`;
-            } else {
-                endpoint = '/despesas';
-                payload = { ...payload, usuario: { id: usuarioId } };
-            }
-
-            console.log('Payload enviado no POST:', payload);
-            const response = await axios.post(endpoint, payload);
-            console.log('Response do POST:', response.data);
-            await carregarTransacoes(); // Aguarda atualização
+            await adicionarTransacao(transacao);
             setShowModal(false);
         } catch (error) {
-            console.error('Erro ao salvar transação:', error);
+            alert('Erro ao salvar transação.');
         }
     };
 
+    // Excluir transação
     const excluirTransacao = async (transacao) => {
         if (!window.confirm('Deseja realmente excluir esta transação?')) return;
-
         try {
-            const endpoint = transacao.tipo === 'Receita'
-                ? `/receitas/${transacao.id}`
-                : `/despesas/${transacao.id}`;
-
-            await axios.delete(endpoint);
-            carregarTransacoes();
+            await removerTransacao(transacao);
         } catch (error) {
-            console.error('Erro ao excluir transação:', error);
+            alert('Erro ao excluir transação.');
         }
     };
-
-    const transacoesFiltradas = transacoes.filter(t => {
-        const correspondeBusca = t.descricao.toLowerCase().includes(termoBusca.toLowerCase());
-        const correspondeFiltro = filtro === '' ? true : t.tipo.toLowerCase() === filtro;
-        return correspondeBusca && correspondeFiltro;
-    });
 
     return (
         <div className="min-h-screen bg-gray-50">
